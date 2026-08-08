@@ -1,0 +1,43 @@
+name: Daily Job Sync
+
+on:
+  schedule:
+    # 每天北京时间 08:30
+    # GitHub Actions 使用 UTC，00:30 UTC = 北京时间 08:30
+    - cron: "30 0 * * *"
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync jobs
+        run: |
+          python sync_tencent_docs.py
+
+      - name: Commit jobs.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add jobs.json
+
+          if git diff --cached --quiet; then
+            echo "No changes."
+          else
+            git commit -m "data: daily sync jobs"
+            git push
+          fi
